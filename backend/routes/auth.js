@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const requireAuth = require('../middleware/auth');
 const router = express.Router();
 
 module.exports = (db) => {
@@ -62,6 +63,19 @@ module.exports = (db) => {
             );
 
             res.json({ message: 'Login successful', token, user: { id: user.id, name: user.name, email: user.email } });
+        });
+    });
+
+    // CURRENT USER - lets the frontend verify a stored token on page load
+    router.get('/me', requireAuth, (req, res) => {
+        db.query('SELECT id, name, email FROM users WHERE id = ?', [req.user.id], (err, results) => {
+            if (err) {
+                return res.status(500).json({ message: 'Database error', error: err.message });
+            }
+            if (results.length === 0) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            res.json({ user: results[0] });
         });
     });
 

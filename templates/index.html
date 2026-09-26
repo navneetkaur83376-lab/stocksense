@@ -7,10 +7,42 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../static/style.css">
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <div class="app-shell">
+
+  <!-- ===================== LOGIN / SIGNUP ===================== -->
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <div class="brand auth-brand">
+        <div class="brand-mark">SS</div>
+        <div><strong>StockSense</strong><span>Inventory OS</span></div>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLogin" onclick="setAuthMode('login')">Log in</button>
+        <button class="auth-tab" id="tabSignup" onclick="setAuthMode('signup')">Sign up</button>
+      </div>
+
+      <form id="loginForm" class="auth-form" onsubmit="return handleLogin(event)">
+        <label>EMAIL<input id="loginEmail" type="email" required placeholder="you@company.com"></label>
+        <label>PASSWORD<input id="loginPassword" type="password" required placeholder="••••••••"></label>
+        <button class="btn btn-orange wide" type="submit">Log in</button>
+      </form>
+
+      <form id="signupForm" class="auth-form" style="display:none" onsubmit="return handleSignup(event)">
+        <label>NAME<input id="signupName" type="text" required placeholder="Full name"></label>
+        <label>EMAIL<input id="signupEmail" type="email" required placeholder="you@company.com"></label>
+        <label>PASSWORD<input id="signupPassword" type="password" required minlength="6" placeholder="At least 6 characters"></label>
+        <button class="btn btn-orange wide" type="submit">Create account</button>
+      </form>
+
+      <div id="authMessage" class="message auth-message"></div>
+    </div>
+  </div>
+
+  <!-- ===================== APP ===================== -->
+  <div class="app-shell" id="appShell" style="display:none">
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">SS</div>
@@ -24,7 +56,7 @@
         <span class="live-dot"></span>
         <div>
           <small>ACTIVE FACILITY</small>
-          <b>Main Warehouse</b>
+          <b>All Warehouses</b>
         </div>
         <span class="chevron">⌄</span>
       </div>
@@ -34,9 +66,15 @@
         <button class="nav-item active" data-section="dashboard">
           <span class="nav-icon">⌂</span><span>Dashboard</span>
         </button>
+        <button class="nav-item" data-section="receiving">
+          <span class="nav-icon">↙</span><span>Receiving</span>
+        </button>
         <button class="nav-item" data-section="deliveries">
           <span class="nav-icon">↗</span><span>Delivery Orders</span>
-          <em id="deliveryBadge">04</em>
+          <em id="deliveryBadge">0</em>
+        </button>
+        <button class="nav-item" data-section="transfers">
+          <span class="nav-icon">⇄</span><span>Transfers</span>
         </button>
         <button class="nav-item" data-section="adjustments">
           <span class="nav-icon">±</span><span>Stock Adjustments</span>
@@ -56,14 +94,14 @@
 
       <div class="sidebar-bottom">
         <div class="health-card">
-          <div class="health-head"><span>System health</span><b>98%</b></div>
-          <div class="health-bar"><i></i></div>
-          <small>All inventory services operational</small>
+          <div class="health-head"><span>System health</span><b id="healthPct">—</b></div>
+          <div class="health-bar"><i id="healthBar"></i></div>
+          <small id="healthNote">Checking inventory services…</small>
         </div>
         <div class="user-card">
-          <div class="avatar">NM</div>
-          <div><b>Inventory Manager</b><span>Administrator</span></div>
-          <button title="Profile">•••</button>
+          <div class="avatar" id="userAvatar">--</div>
+          <div><b id="userName">—</b><span>Signed in</span></div>
+          <button title="Log out" onclick="handleLogout()">⏻</button>
         </div>
       </div>
     </aside>
@@ -72,17 +110,17 @@
       <header class="topbar">
         <div class="crumb"><span>STOCKSENSE</span><i>/</i><b id="pageCrumb">OVERVIEW</b></div>
         <div class="top-actions">
-          <div class="system-time"><span class="pulse"></span> LIVE <b id="clock">10:24:18</b></div>
-          <button class="icon-btn" title="Notifications">♢<span class="notification-dot"></span></button>
-          <button class="profile-btn"><span class="mini-avatar">NM</span> Navneet <span>⌄</span></button>
+          <div class="system-time"><span class="pulse"></span> LIVE <b id="clock">--:--:--</b></div>
         </div>
       </header>
 
       <div class="content">
+
+        <!-- DASHBOARD -->
         <section id="dashboard" class="page-section active-section">
           <div class="hero">
             <div>
-              <div class="eyebrow">OPERATIONS / 26 SEPT 2026</div>
+              <div class="eyebrow" id="heroDate">OPERATIONS</div>
               <h1>Warehouse <span>control room.</span></h1>
               <p>Monitor stock, clear outgoing orders, and catch inventory exceptions before they become delays.</p>
             </div>
@@ -95,22 +133,22 @@
           <div class="kpi-grid">
             <article class="kpi kpi-main">
               <div class="kpi-top"><span>STOCK ON HAND</span><span class="kpi-code">01 / 04</span></div>
-              <div class="kpi-value" id="totalUnits">147</div>
-              <div class="kpi-foot"><span class="trend up">↑ 8.4%</span> vs last week <div class="spark"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+              <div class="kpi-value" id="totalUnits">—</div>
+              <div class="kpi-foot"><span>Across all warehouses</span></div>
             </article>
             <article class="kpi">
               <div class="kpi-top"><span>LOW STOCK</span><span class="status-dot orange"></span></div>
-              <div class="kpi-value" id="lowCount">02</div>
+              <div class="kpi-value" id="lowCount">—</div>
               <div class="kpi-foot">Items need attention</div>
             </article>
             <article class="kpi">
               <div class="kpi-top"><span>OUT OF STOCK</span><span class="status-dot red"></span></div>
-              <div class="kpi-value red-text" id="outCount">01</div>
+              <div class="kpi-value red-text" id="outCount">—</div>
               <div class="kpi-foot">Immediate replenishment</div>
             </article>
             <article class="kpi">
               <div class="kpi-top"><span>PENDING DELIVERIES</span><span class="status-dot green"></span></div>
-              <div class="kpi-value" id="pendingCount">04</div>
+              <div class="kpi-value" id="pendingCount">—</div>
               <div class="kpi-foot">Orders in outbound queue</div>
             </article>
           </div>
@@ -123,13 +161,11 @@
               </div>
 
               <div class="toolbar">
-                <div class="search"><span>⌕</span><input id="globalSearch" oninput="renderInventory()" placeholder="Search SKU, product or category..." /></div>
-                <select id="warehouseFilter" onchange="renderInventory()">
+                <div class="search"><span>⌕</span><input id="globalSearch" oninput="syncSearch(this.value)" placeholder="Search SKU, product or category..." /></div>
+                <select id="warehouseFilter" onchange="syncWarehouse(this.value)">
                   <option value="all">All locations</option>
-                  <option value="Main Warehouse">Main Warehouse</option>
-                  <option value="Production Floor">Production Floor</option>
                 </select>
-                <select id="stockFilter" onchange="renderInventory()">
+                <select id="stockFilter" onchange="syncStock(this.value)">
                   <option value="all">All status</option>
                   <option value="in">In stock</option>
                   <option value="low">Low stock</option>
@@ -139,7 +175,7 @@
 
               <div class="table-wrap">
                 <table>
-                  <thead><tr><th>PRODUCT</th><th>SKU</th><th>LOCATION</th><th>ON HAND</th><th>STATUS</th><th></th></tr></thead>
+                  <thead><tr><th>PRODUCT</th><th>SKU</th><th>LOCATION</th><th>ON HAND</th><th>STATUS</th></tr></thead>
                   <tbody id="inventoryBody"></tbody>
                 </table>
               </div>
@@ -148,7 +184,7 @@
             <aside class="panel alert-panel">
               <div class="panel-head">
                 <div><span class="panel-kicker warning">EXCEPTIONS</span><h2>Needs attention</h2></div>
-                <span class="count-badge" id="exceptionCount">03</span>
+                <span class="count-badge" id="exceptionCount">0</span>
               </div>
               <div id="alerts"></div>
               <button class="full-btn" onclick="showSection('adjustments')">Review stock issues</button>
@@ -159,20 +195,9 @@
             <section class="panel warehouse-panel">
               <div class="panel-head">
                 <div><span class="panel-kicker">CAPACITY</span><h2>Warehouse utilization</h2></div>
-                <span class="mono">TODAY</span>
+                <span class="mono">LIVE</span>
               </div>
-              <div class="warehouse-row">
-                <div class="warehouse-name"><span class="warehouse-icon">⌂</span><div><b>Main Warehouse</b><small>MW / A-01 → A-12</small></div></div>
-                <strong>74%</strong>
-              </div>
-              <div class="capacity"><i style="width:74%"></i></div>
-              <div class="warehouse-meta"><span>3,704 units stored</span><span>26% available</span></div>
-              <div class="warehouse-row second">
-                <div class="warehouse-name"><span class="warehouse-icon">⌂</span><div><b>Production Floor</b><small>PF / R-01 → R-06</small></div></div>
-                <strong>41%</strong>
-              </div>
-              <div class="capacity"><i class="green-fill" style="width:41%"></i></div>
-              <div class="warehouse-meta"><span>1,204 units stored</span><span>59% available</span></div>
+              <div id="warehouseUtilization"></div>
             </section>
 
             <section class="panel activity-panel">
@@ -180,53 +205,99 @@
                 <div><span class="panel-kicker">STOCK LEDGER</span><h2>Latest movement</h2></div>
                 <button class="text-btn" onclick="showSection('activity')">View all →</button>
               </div>
-              <div class="timeline">
-                <div><span class="tl-dot orange"></span><div><b>Steel Rods</b> delivered <strong>−20</strong><small>DO-1042 · 2 min ago</small></div></div>
-                <div><span class="tl-dot green"></span><div><b>Office Chairs</b> received <strong>+40</strong><small>RC-2091 · 18 min ago</small></div></div>
-                <div><span class="tl-dot"></span><div><b>Computer Systems</b> moved <strong>A-04 → B-02</strong><small>TR-0821 · 41 min ago</small></div></div>
-              </div>
+              <div class="timeline" id="dashboardTimeline"></div>
             </section>
           </div>
         </section>
 
-        <section id="deliveries" class="page-section">
-          <div class="page-title"><div><span class="eyebrow">OUTBOUND / DELIVERY ORDERS</span><h1>Move stock out.</h1><p>Pick, pack and validate outgoing inventory.</p></div><button class="btn btn-orange" onclick="resetDelivery()">+ Create delivery</button></div>
+        <!-- RECEIVING -->
+        <section id="receiving" class="page-section">
+          <div class="page-title"><div><span class="eyebrow">INBOUND / RECEIVING</span><h1>Bring stock in.</h1><p>Log incoming stock from a supplier and validate it into a warehouse.</p></div></div>
           <div class="operation-layout">
             <section class="panel operation-panel">
-              <div class="process">
-                <div class="process-step active"><span>01</span><b>PICK</b><small>Select stock</small></div>
-                <div class="process-line"></div>
-                <div class="process-step"><span>02</span><b>PACK</b><small>Prepare order</small></div>
-                <div class="process-line"></div>
-                <div class="process-step"><span>03</span><b>VALIDATE</b><small>Reduce stock</small></div>
-              </div>
               <div class="form-grid">
-                <label>PRODUCT<select id="deliveryProduct" onchange="updateDeliveryPreview()"></select></label>
-                <label>QUANTITY<input id="deliveryQty" type="number" min="1" value="1" oninput="updateDeliveryPreview()"></label>
-                <label>DESTINATION<input value="Customer Dispatch Bay" /></label>
-                <label>REFERENCE<input value="DO-1043" /></label>
+                <label>SUPPLIER<input id="receiptSupplier" placeholder="e.g. Acme Supplies"></label>
+                <label>WAREHOUSE<select id="receiptWarehouse"></select></label>
+                <label>PRODUCT<select id="receiptProduct"></select></label>
+                <label>QUANTITY<input id="receiptQty" type="number" min="1" value="1"></label>
               </div>
-              <div class="delivery-preview">
-                <div><small>AVAILABLE</small><strong id="deliveryAvailable">80</strong><span>units</span></div>
-                <div class="arrow">→</div>
-                <div><small>OUTBOUND</small><strong id="deliveryOutbound">1</strong><span>units</span></div>
-                <div class="arrow">→</div>
-                <div><small>REMAINING</small><strong id="deliveryRemaining">79</strong><span>units</span></div>
-              </div>
-              <div class="step-actions"><button class="btn btn-dark" onclick="setProcess(2)">Mark as packed</button><button class="btn btn-orange" onclick="validateDelivery()">Validate delivery</button></div>
-              <div id="deliveryMessage" class="message"></div>
+              <div class="step-actions"><button class="btn btn-orange" onclick="createAndValidateReceipt()">Receive & validate</button></div>
+              <div id="receiptMessage" class="message"></div>
             </section>
 
             <aside class="panel queue-panel">
-              <div class="panel-head"><div><span class="panel-kicker">OUTBOUND QUEUE</span><h2>Today's orders</h2></div><span class="count-badge">04</span></div>
-              <div class="queue-item"><span class="order-state orange-line"></span><div><b>DO-1042</b><small>Steel Rods · 20 units</small></div><strong>READY</strong></div>
-              <div class="queue-item"><span class="order-state yellow-line"></span><div><b>DO-1043</b><small>Office Chairs · 8 units</small></div><strong>PACK</strong></div>
-              <div class="queue-item"><span class="order-state green-line"></span><div><b>DO-1044</b><small>Computer Systems · 3 units</small></div><strong>PICK</strong></div>
-              <div class="queue-item"><span class="order-state"></span><div><b>DO-1045</b><small>Keyboard · 12 units</small></div><strong>DRAFT</strong></div>
+              <div class="panel-head"><div><span class="panel-kicker">RECENT RECEIPTS</span><h2>Latest inbound</h2></div></div>
+              <div id="receiptQueue"></div>
             </aside>
           </div>
         </section>
 
+        <!-- DELIVERIES -->
+        <section id="deliveries" class="page-section">
+          <div class="page-title"><div><span class="eyebrow">OUTBOUND / DELIVERY ORDERS</span><h1>Move stock out.</h1><p>Pick, pack and validate outgoing inventory.</p></div></div>
+          <div class="operation-layout">
+            <section class="panel operation-panel">
+              <div class="process">
+                <div class="process-step active" id="deliveryStep1"><span>01</span><b>PICK</b><small>Select stock</small></div>
+                <div class="process-line"></div>
+                <div class="process-step" id="deliveryStep2"><span>02</span><b>PACK</b><small>Prepare order</small></div>
+                <div class="process-line"></div>
+                <div class="process-step" id="deliveryStep3"><span>03</span><b>VALIDATE</b><small>Reduce stock</small></div>
+              </div>
+              <div class="form-grid">
+                <label>CUSTOMER<input id="deliveryCustomer" placeholder="e.g. Customer Dispatch Bay"></label>
+                <label>WAREHOUSE<select id="deliveryWarehouse" onchange="updateDeliveryPreview()"></select></label>
+                <label>PRODUCT<select id="deliveryProduct" onchange="updateDeliveryPreview()"></select></label>
+                <label>QUANTITY<input id="deliveryQty" type="number" min="1" value="1" oninput="updateDeliveryPreview()"></label>
+              </div>
+              <div class="delivery-preview">
+                <div><small>AVAILABLE</small><strong id="deliveryAvailable">0</strong><span>units</span></div>
+                <div class="arrow">→</div>
+                <div><small>OUTBOUND</small><strong id="deliveryOutbound">1</strong><span>units</span></div>
+                <div class="arrow">→</div>
+                <div><small>REMAINING</small><strong id="deliveryRemaining">0</strong><span>units</span></div>
+              </div>
+              <div class="step-actions">
+                <button class="btn btn-dark" onclick="createDeliveryDraft()">1. Create draft</button>
+                <button class="btn btn-ghost" onclick="packActiveDelivery()">2. Mark as packed</button>
+                <button class="btn btn-orange" onclick="validateActiveDelivery()">3. Validate delivery</button>
+              </div>
+              <div id="deliveryMessage" class="message"></div>
+            </section>
+
+            <aside class="panel queue-panel">
+              <div class="panel-head"><div><span class="panel-kicker">OUTBOUND QUEUE</span><h2>Recent orders</h2></div><span class="count-badge" id="deliveryQueueCount">0</span></div>
+              <div id="deliveryQueue"></div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- TRANSFERS -->
+        <section id="transfers" class="page-section">
+          <div class="page-title"><div><span class="eyebrow">INTERNAL / TRANSFERS</span><h1>Move stock between warehouses.</h1><p>Total stock stays the same — only the location changes.</p></div></div>
+          <div class="operation-layout">
+            <section class="panel operation-panel">
+              <div class="form-grid">
+                <label>FROM<select id="transferFrom" onchange="updateTransferPreview()"></select></label>
+                <label>TO<select id="transferTo" onchange="updateTransferPreview()"></select></label>
+                <label>PRODUCT<select id="transferProduct" onchange="updateTransferPreview()"></select></label>
+                <label>QUANTITY<input id="transferQty" type="number" min="1" value="1" oninput="updateTransferPreview()"></label>
+              </div>
+              <div class="delivery-preview">
+                <div><small>AVAILABLE AT SOURCE</small><strong id="transferAvailable">0</strong><span>units</span></div>
+              </div>
+              <div class="step-actions"><button class="btn btn-orange" onclick="createAndValidateTransfer()">Transfer & validate</button></div>
+              <div id="transferMessage" class="message"></div>
+            </section>
+
+            <aside class="panel queue-panel">
+              <div class="panel-head"><div><span class="panel-kicker">RECENT TRANSFERS</span><h2>Latest moves</h2></div></div>
+              <div id="transferQueue"></div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- ADJUSTMENTS -->
         <section id="adjustments" class="page-section">
           <div class="page-title"><div><span class="eyebrow">INVENTORY CONTROL / ADJUSTMENT</span><h1>Correct the count.</h1><p>Reconcile recorded stock with the physical count and keep the ledger accurate.</p></div></div>
           <div class="adjust-layout">
@@ -234,7 +305,7 @@
               <div class="panel-head"><div><span class="panel-kicker">NEW ADJUSTMENT</span><h2>Physical count</h2></div><span class="mono">AUDIT READY</span></div>
               <div class="form-grid">
                 <label>PRODUCT<select id="adjustProduct" onchange="updateAdjustment()"></select></label>
-                <label>LOCATION<select><option>Main Warehouse</option><option>Production Floor</option></select></label>
+                <label>LOCATION<select id="adjustWarehouse" onchange="updateAdjustment()"></select></label>
                 <label>RECORDED STOCK<input id="recordedStock" readonly></label>
                 <label>PHYSICAL COUNT<input id="physicalCount" type="number" min="0" oninput="updateAdjustment()"></label>
               </div>
@@ -245,43 +316,66 @@
             </section>
             <aside class="panel audit-panel">
               <div class="panel-head"><div><span class="panel-kicker">CONTROL LOG</span><h2>Recent adjustments</h2></div></div>
-              <div class="audit-row"><b>ADJ-018</b><span>Steel Rods</span><strong class="negative">−3</strong><small>Damaged · 09:42</small></div>
-              <div class="audit-row"><b>ADJ-017</b><span>Keyboard</span><strong class="positive">+2</strong><small>Count correction · 08:17</small></div>
-              <div class="audit-row"><b>ADJ-016</b><span>Office Tables</span><strong class="negative">−1</strong><small>Damaged · Yesterday</small></div>
+              <div id="adjustmentLog"></div>
             </aside>
           </div>
         </section>
 
+        <!-- INVENTORY -->
         <section id="inventory" class="page-section">
-          <div class="page-title"><div><span class="eyebrow">CATALOG / INVENTORY</span><h1>Everything in one view.</h1><p>Search by SKU, category, location or stock state.</p></div></div>
+          <div class="page-title">
+            <div><span class="eyebrow">CATALOG / INVENTORY</span><h1>Everything in one view.</h1><p>Search by SKU, category, location or stock state.</p></div>
+            <button class="btn btn-orange" onclick="toggleNewProductForm()">+ Add product</button>
+          </div>
+
+          <section class="panel adjustment-card" id="newProductForm" style="display:none;margin-bottom:10px">
+            <div class="form-grid">
+              <label>NAME<input id="newProductName" placeholder="e.g. Steel Rods"></label>
+              <label>SKU<input id="newProductSku" placeholder="e.g. ST-001"></label>
+              <label>CATEGORY<input id="newProductCategory" placeholder="e.g. Raw Material"></label>
+              <label>UNIT<input id="newProductUnit" placeholder="e.g. kg" value="units"></label>
+              <label>MIN STOCK<input id="newProductMin" type="number" min="0" value="10"></label>
+            </div>
+            <div class="step-actions"><button class="btn btn-dark" onclick="createProduct()">Save product</button></div>
+            <div id="newProductMessage" class="message"></div>
+          </section>
+
           <section class="panel inventory-full">
-            <div class="toolbar"><div class="search"><span>⌕</span><input id="inventorySearch2" oninput="syncSearch(this.value)" placeholder="Search inventory..." /></div><select id="warehouseFilter2" onchange="syncWarehouse(this.value)"><option value="all">All locations</option><option>Main Warehouse</option><option>Production Floor</option></select><select id="stockFilter2" onchange="syncStock(this.value)"><option value="all">All status</option><option value="in">In stock</option><option value="low">Low stock</option><option value="out">Out of stock</option></select></div>
+            <div class="toolbar"><div class="search"><span>⌕</span><input id="inventorySearch2" oninput="syncSearch(this.value)" placeholder="Search inventory..." /></div><select id="warehouseFilter2" onchange="syncWarehouse(this.value)"><option value="all">All locations</option></select><select id="stockFilter2" onchange="syncStock(this.value)"><option value="all">All status</option><option value="in">In stock</option><option value="low">Low stock</option><option value="out">Out of stock</option></select></div>
             <div class="table-wrap"><table><thead><tr><th>PRODUCT</th><th>SKU</th><th>CATEGORY</th><th>LOCATION</th><th>ON HAND</th><th>STATUS</th></tr></thead><tbody id="inventoryBody2"></tbody></table></div>
           </section>
         </section>
 
+        <!-- WAREHOUSES -->
         <section id="warehouse" class="page-section">
-          <div class="page-title"><div><span class="eyebrow">NETWORK / FACILITIES</span><h1>Warehouse network.</h1><p>Track stock capacity across operational locations.</p></div></div>
-          <div class="warehouse-cards">
-            <div class="warehouse-big"><span class="warehouse-icon large">⌂</span><div class="warehouse-top"><div><small>MW / A-01 → A-12</small><h2>Main Warehouse</h2></div><b>74%</b></div><div class="capacity tall"><i style="width:74%"></i></div><div class="warehouse-meta"><span>3,704 units</span><span>26% free</span></div></div>
-            <div class="warehouse-big"><span class="warehouse-icon large">⌂</span><div class="warehouse-top"><div><small>PF / R-01 → R-06</small><h2>Production Floor</h2></div><b>41%</b></div><div class="capacity tall"><i class="green-fill" style="width:41%"></i></div><div class="warehouse-meta"><span>1,204 units</span><span>59% free</span></div></div>
+          <div class="page-title">
+            <div><span class="eyebrow">NETWORK / FACILITIES</span><h1>Warehouse network.</h1><p>Track stock capacity across operational locations.</p></div>
+            <button class="btn btn-orange" onclick="toggleNewWarehouseForm()">+ Add warehouse</button>
           </div>
+          <section class="panel adjustment-card" id="newWarehouseForm" style="display:none;margin-bottom:10px">
+            <div class="form-grid">
+              <label>NAME<input id="newWarehouseName" placeholder="e.g. Main Warehouse"></label>
+              <label>ADDRESS<input id="newWarehouseAddress" placeholder="Optional"></label>
+              <label>CAPACITY (UNITS)<input id="newWarehouseCapacity" type="number" min="1" value="5000"></label>
+            </div>
+            <div class="step-actions"><button class="btn btn-dark" onclick="createWarehouse()">Save warehouse</button></div>
+            <div id="newWarehouseMessage" class="message"></div>
+          </section>
+          <div class="warehouse-cards" id="warehouseCards"></div>
         </section>
 
+        <!-- LEDGER -->
         <section id="activity" class="page-section">
           <div class="page-title"><div><span class="eyebrow">AUDIT / STOCK LEDGER</span><h1>Every movement logged.</h1><p>A simple trail for receipts, deliveries, transfers and adjustments.</p></div></div>
           <section class="panel ledger">
             <div class="ledger-row head"><span>TIME</span><span>REFERENCE</span><span>ITEM</span><span>ACTION</span><span>QTY</span><span>LOCATION</span></div>
-            <div class="ledger-row"><span>10:22</span><span>DO-1042</span><b>Steel Rods</b><span class="action outbound">DELIVERY</span><strong>−20</strong><span>Main Warehouse</span></div>
-            <div class="ledger-row"><span>10:06</span><span>RC-2091</span><b>Office Chairs</b><span class="action inbound">RECEIPT</span><strong>+40</strong><span>Main Warehouse</span></div>
-            <div class="ledger-row"><span>09:43</span><span>ADJ-018</span><b>Steel Rods</b><span class="action adjust">ADJUSTMENT</span><strong>−3</strong><span>Main Warehouse</span></div>
-            <div class="ledger-row"><span>09:18</span><span>TR-0821</span><b>Computer Systems</b><span class="action transfer">TRANSFER</span><strong>→</strong><span>A-04 → B-02</span></div>
-            <div class="ledger-row"><span>08:17</span><span>ADJ-017</span><b>Keyboard</b><span class="action adjust">ADJUSTMENT</span><strong>+2</strong><span>Production Floor</span></div>
+            <div id="ledgerBody"></div>
           </section>
         </section>
+
       </div>
     </main>
   </div>
-  <script src="../static/script.js"></script>
+  <script src="/static/script.js"></script>
 </body>
 </html>

@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
+const requireAuth = require('../middleware/auth');
 
 module.exports = (db) => {
 
     // CREATE a transfer (draft) with items
     // body: { from_warehouse_id, to_warehouse_id, items: [{ product_id, quantity }] }
-    router.post('/', (req, res) => {
+    router.post('/', requireAuth, (req, res) => {
         const { from_warehouse_id, to_warehouse_id, items } = req.body;
 
         if (!from_warehouse_id || !to_warehouse_id || !Array.isArray(items) || items.length === 0) {
@@ -69,7 +70,7 @@ module.exports = (db) => {
     });
 
     // VALIDATE a transfer -> stock moves between warehouses, total unchanged, logged in the ledger
-    router.put('/:id/validate', (req, res) => {
+    router.put('/:id/validate', requireAuth, (req, res) => {
         const transferId = req.params.id;
 
         db.query('SELECT * FROM transfers WHERE id = ?', [transferId], (err, transferResults) => {
@@ -193,7 +194,7 @@ module.exports = (db) => {
     });
 
     // DELETE a draft transfer (can't delete once validated)
-    router.delete('/:id', (req, res) => {
+    router.delete('/:id', requireAuth, (req, res) => {
         db.query('SELECT status FROM transfers WHERE id = ?', [req.params.id], (err, results) => {
             if (err) {
                 return res.status(500).json({ message: 'Database error', error: err.message });
