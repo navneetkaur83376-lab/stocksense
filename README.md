@@ -54,7 +54,7 @@ Edit `backend/.env` (already present, adjust as needed):
 PORT=5000
 DB_HOST=localhost
 DB_USER=root
-DB_PASSWORD=root
+DB_PASSWORD=
 DB_NAME=stocksense
 JWT_SECRET=change_this_to_something_random_and_long
 ```
@@ -98,20 +98,20 @@ All endpoints are under `/api`. GET endpoints are public; every write
 (`POST`/`PUT`/`DELETE`, except `/auth/signup` and `/auth/login`) requires
 `Authorization: Bearer <token>` from `/api/auth/login`.
 
-| Method | Path | Purpose |
-|---|---|---|
-| POST | `/auth/signup`, `/auth/login` | account creation / login |
-| GET | `/auth/me` | verify a stored token |
-| GET/POST/PUT/DELETE | `/products` | product CRUD |
-| GET | `/products/stock/breakdown` | every product × warehouse quantity |
-| GET | `/products/:id/stock` | one product's stock by warehouse |
-| GET/POST/PUT/DELETE | `/warehouses` | warehouse CRUD |
-| POST | `/receipts`, `PUT /receipts/:id/validate` | receive stock |
-| POST | `/deliveries`, `PUT /deliveries/:id/pack`, `PUT /deliveries/:id/validate` | deliver stock |
-| POST | `/transfers`, `PUT /transfers/:id/validate` | move stock between warehouses |
-| POST | `/adjustments` | reconcile a physical count |
-| GET | `/ledger` | audit trail |
-| GET | `/dashboard/summary` | KPI numbers for the dashboard |
+| Method              | Path                                                                      | Purpose                            |
+| ------------------- | ------------------------------------------------------------------------- | ---------------------------------- |
+| POST                | `/auth/signup`, `/auth/login`                                             | account creation / login           |
+| GET                 | `/auth/me`                                                                | verify a stored token              |
+| GET/POST/PUT/DELETE | `/products`                                                               | product CRUD                       |
+| GET                 | `/products/stock/breakdown`                                               | every product × warehouse quantity |
+| GET                 | `/products/:id/stock`                                                     | one product's stock by warehouse   |
+| GET/POST/PUT/DELETE | `/warehouses`                                                             | warehouse CRUD                     |
+| POST                | `/receipts`, `PUT /receipts/:id/validate`                                 | receive stock                      |
+| POST                | `/deliveries`, `PUT /deliveries/:id/pack`, `PUT /deliveries/:id/validate` | deliver stock                      |
+| POST                | `/transfers`, `PUT /transfers/:id/validate`                               | move stock between warehouses      |
+| POST                | `/adjustments`                                                            | reconcile a physical count         |
+| GET                 | `/ledger`                                                                 | audit trail                        |
+| GET                 | `/dashboard/summary`                                                      | KPI numbers for the dashboard      |
 
 ## Notes
 
