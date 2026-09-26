@@ -5,13 +5,13 @@ module.exports = (db) => {
 
     // CREATE a warehouse
     router.post('/', (req, res) => {
-        const { name, location } = req.body;
+        const { name, address } = req.body;
 
         if (!name) {
             return res.status(400).json({ message: 'Name is required' });
         }
 
-        db.query('INSERT INTO warehouses (name, location) VALUES (?, ?)', [name, location || null], (err, result) => {
+        db.query('INSERT INTO warehouses (name, address) VALUES (?, ?)', [name, address || null], (err, result) => {
             if (err) {
                 return res.status(500).json({ message: 'Database error', error: err.message });
             }
@@ -44,9 +44,9 @@ module.exports = (db) => {
 
     // UPDATE a warehouse
     router.put('/:id', (req, res) => {
-        const { name, location } = req.body;
+        const { name, address } = req.body;
 
-        db.query('UPDATE warehouses SET name = ?, location = ? WHERE id = ?', [name, location, req.params.id], (err, result) => {
+        db.query('UPDATE warehouses SET name = ?, address = ? WHERE id = ?', [name, address, req.params.id], (err, result) => {
             if (err) {
                 return res.status(500).json({ message: 'Database error', error: err.message });
             }

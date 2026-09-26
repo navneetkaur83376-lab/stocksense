@@ -3,17 +3,17 @@ const router = express.Router();
 
 module.exports = (db) => {
 
-    // CREATE a receipt (draft) with items
-    // body: { supplier_name, warehouse_id, items: [{ product_id, quantity }] }
+    // CREATE a receipt (Draft) with items
+    // body: { supplier_name, warehouse_id, created_by (optional), items: [{ product_id, quantity }] }
     router.post('/', (req, res) => {
-        const { supplier_name, warehouse_id, items } = req.body;
+        const { supplier_name, warehouse_id, created_by, items } = req.body;
 
         if (!supplier_name || !warehouse_id || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ message: 'supplier_name, warehouse_id and at least one item are required' });
         }
 
-        const receiptQuery = 'INSERT INTO receipts (supplier_name, warehouse_id, status) VALUES (?, ?, ?)';
-        db.query(receiptQuery, [supplier_name, warehouse_id, 'draft'], (err, result) => {
+        const receiptQuery = 'INSERT INTO receipts (supplier_name, warehouse_id, status, created_by) VALUES (?, ?, ?, ?)';
+        db.query(receiptQuery, [supplier_name, warehouse_id, 'Draft', created_by || null], (err, result) => {
             if (err) {
                 return res.status(500).json({ message: 'Database error', error: err.message });
             }
@@ -65,7 +65,7 @@ module.exports = (db) => {
         });
     });
 
-    // VALIDATE a receipt -> stock increases automatically, logged in the ledger
+    // VALIDATE a receipt -> stock increases automatically, logged in stock_ledger
     router.put('/:id/validate', (req, res) => {
         const receiptId = req.params.id;
 
@@ -77,7 +77,7 @@ module.exports = (db) => {
                 return res.status(404).json({ message: 'Receipt not found' });
             }
             const receipt = receiptResults[0];
-            if (receipt.status === 'done') {
+            if (receipt.status === 'Done') {
                 return res.status(409).json({ message: 'Receipt already validated' });
             }
 
@@ -96,7 +96,7 @@ module.exports = (db) => {
 
                     const applyItem = (index) => {
                         if (index === items.length) {
-                            db.query('UPDATE receipts SET status = ? WHERE id = ?', ['done', receiptId], (err3) => {
+                            db.query('UPDATE receipts SET status = ? WHERE id = ?', ['Done', receiptId], (err3) => {
                                 if (err3) {
                                     return db.rollback(() => res.status(500).json({ message: 'Database error', error: err3.message }));
                                 }
@@ -112,33 +112,21 @@ module.exports = (db) => {
 
                         const item = items[index];
 
-                        // Add to (or create) this product's stock at this warehouse
-                        const upsertQuery = `
-                            INSERT INTO product_stock (product_id, warehouse_id, quantity)
-                            VALUES (?, ?, ?)
-                            ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)
-                        `;
-                        db.query(upsertQuery, [item.product_id, receipt.warehouse_id, item.quantity], (err4) => {
+                        // Keep products.current_stock as the running total across all warehouses
+                        db.query('UPDATE products SET current_stock = current_stock + ? WHERE id = ?', [item.quantity, item.product_id], (err4) => {
                             if (err4) {
                                 return db.rollback(() => res.status(500).json({ message: 'Database error', error: err4.message }));
                             }
 
-                            // Keep products.current_stock as the running total across all warehouses
-                            db.query('UPDATE products SET current_stock = current_stock + ? WHERE id = ?', [item.quantity, item.product_id], (err5) => {
+                            const ledgerQuery = `
+                                INSERT INTO stock_ledger (product_id, location_id, qty_change, reason, ref_id)
+                                VALUES (?, ?, ?, 'receipt', ?)
+                            `;
+                            db.query(ledgerQuery, [item.product_id, receipt.warehouse_id, item.quantity, receiptId], (err5) => {
                                 if (err5) {
                                     return db.rollback(() => res.status(500).json({ message: 'Database error', error: err5.message }));
                                 }
-
-                                const ledgerQuery = `
-                                    INSERT INTO stock_ledger (product_id, warehouse_id, change_qty, reason, reference_type, reference_id)
-                                    VALUES (?, ?, ?, 'receipt', 'receipt', ?)
-                                `;
-                                db.query(ledgerQuery, [item.product_id, receipt.warehouse_id, item.quantity, receiptId], (err6) => {
-                                    if (err6) {
-                                        return db.rollback(() => res.status(500).json({ message: 'Database error', error: err6.message }));
-                                    }
-                                    applyItem(index + 1);
-                                });
+                                applyItem(index + 1);
                             });
                         });
                     };
@@ -158,7 +146,7 @@ module.exports = (db) => {
             if (results.length === 0) {
                 return res.status(404).json({ message: 'Receipt not found' });
             }
-            if (results[0].status === 'done') {
+            if (results[0].status === 'Done') {
                 return res.status(409).json({ message: 'Cannot delete a validated receipt' });
             }
             db.query('DELETE FROM receipts WHERE id = ?', [req.params.id], (err2) => {
