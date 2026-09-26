@@ -29,6 +29,15 @@ app.use('/api/auth', authRoutes(db));
 const productRoutes = require('./routes/products');
 app.use('/api/products', productRoutes(db));
 
+const warehouseRoutes = require('./routes/warehouses');
+app.use('/api/warehouses', warehouseRoutes(db));
+
+const receiptRoutes = require('./routes/receipts');
+app.use('/api/receipts', receiptRoutes(db));
+
+const transferRoutes = require('./routes/transfers');
+app.use('/api/transfers', transferRoutes(db));
+
 app.get('/', (req, res) => {
     res.send('StockSense API is running');
 });
